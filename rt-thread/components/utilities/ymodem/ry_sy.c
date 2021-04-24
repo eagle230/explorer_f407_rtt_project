@@ -30,9 +30,15 @@ static enum rym_code _rym_recv_begin(
     rt_size_t len)
 {
     struct custom_ctx *cctx = (struct custom_ctx *)ctx;
-
-    cctx->fpath[0] = '/';
+	#ifdef DFS_USING_WORKDIR
+	extern char working_directory[];
+	rt_strncpy(&(cctx->fpath[0]),working_directory,strlen(working_directory));
+	cctx->fpath[strlen(working_directory)] = '/';
+	rt_strncpy(&(cctx->fpath[strlen(working_directory)+1]), (const char *)buf, len - 1);
+	#else
+	cctx->fpath[0] = '/';
     rt_strncpy(&(cctx->fpath[1]), (const char *)buf, len - 1);
+	#endif
     cctx->fd = open(cctx->fpath, O_CREAT | O_WRONLY | O_TRUNC, 0);
     if (cctx->fd < 0)
     {

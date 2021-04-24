@@ -9,10 +9,81 @@
  */
 #include <rtthread.h>
 #include <webclient.h>
-#define GET_HEADER_BUFSZ               1024
-#define GET_RESP_BUFSZ                 1024
+#include "weather.h"
+//#include <stdio.h>
+#include <cJSON.h>
+#define DBG_TAG "weather_app"
+#define DBG_LVL DBG_LOG
+#include <rtdbg.h>
+char str_name[12],str_time[24],str_temp[24];
+static int weather_data_parse(const char *data)
+{
+    int ret = 0;
+    cJSON *json_root,*json_result,*json_location,*json_now,*json_name,*json_time,*json_temp,*json_arry;
+    char *p_name,*p_time,*p_temp;
+    LOG_D("\r\nweather_data_parse\r\n");
+    json_root = cJSON_Parse(data);
+    if(json_root != RT_NULL)
+    {
+        json_result = cJSON_GetObjectItem(json_root,"results");
+        if(!json_result)
+        {
+            LOG_D("json_result errors\r\n");
+            goto exit;
+        }
+        int size = cJSON_GetArraySize(json_result);
+        LOG_D("json_result size %d\r\n",size);
+        json_arry = cJSON_GetArrayItem(json_result,0);
+        json_location = cJSON_GetObjectItem(json_arry,"location");
+        if(!json_location)
+        {
+            LOG_D("json_location errors\r\n");
+            goto exit;
+        }
+        json_name = cJSON_GetObjectItem(json_location,"name");
+        if(!json_name)
+        {
+            LOG_D("json_name errors\r\n");
+            goto exit;
+        }
+        json_now = cJSON_GetObjectItem(json_arry,"now");
+        if(!json_now)
+        {
+            LOG_D("json_now errors\r\n");
+            goto exit;
+        }
+        json_temp = cJSON_GetObjectItem(json_now,"temperature");
+        if(!json_temp)
+        {
+            LOG_D("json_temp errors\r\n");
+        }
+        json_time = cJSON_GetObjectItem(json_arry,"last_update");
+        if(!json_time)
+        {
+            LOG_D("json_time errors\r\n");
+            goto exit;
+        }
+        p_name = cJSON_GetStringValue(json_name);
+        rt_sprintf(str_name, "%s",p_name);
+        rt_kprintf("str_name1 : %s,len = %d\r\n",p_name,rt_strlen(p_name));
+        p_time = cJSON_GetStringValue(json_time);
+        rt_sprintf(str_time, "%s",p_time);
 
-#define WEATHER_GET_URI                  "https://api.seniverse.com/v3/weather/now.json?key=Sfu0cnHxMOS421TeI&location=beijing&language=zh-Hans&unit=c"
+        p_temp = cJSON_GetStringValue(json_temp);
+        rt_sprintf(str_temp, "%s",p_temp);
+
+        LOG_D("str_name : %s\r\n",str_name);
+        LOG_D("str_time : %s\r\n",str_time);
+        LOG_D("str_temp : %s\r\n",str_temp);
+    }
+    else {
+        ret = -1;
+        LOG_D(" json parse failed ..");
+    }
+exit:
+    cJSON_Delete(json_root);
+    return ret;
+}
 static int webclient_get_comm1(const char *uri)
 {
     struct webclient_session* session = RT_NULL;
@@ -21,10 +92,10 @@ static int webclient_get_comm1(const char *uri)
     int bytes_read, resp_status;
     int content_length = -1;
 
-    buffer = (unsigned char *) web_malloc(GET_RESP_BUFSZ);
+    buffer = (unsigned char *) web_calloc(1,GET_RESP_BUFSZ);
     if (buffer == RT_NULL)
     {
-        rt_kprintf("no memory for receive buffer.\n");
+        LOG_D("no memory for receive buffer.\n");
         ret = -RT_ENOMEM;
         goto __exit;
 
@@ -41,17 +112,17 @@ static int webclient_get_comm1(const char *uri)
     /* send GET request by default header */
     if ((resp_status = webclient_get(session, uri)) != 200)
     {
-        rt_kprintf("webclient GET request failed, response(%d) error.\n", resp_status);
+        LOG_D("webclient GET request failed, response(%d) error.\n", resp_status);
         ret = -RT_ERROR;
         goto __exit;
     }
 
-    rt_kprintf("webclient get response data: \n");
+    LOG_D("webclient get response data: \n");
 
     content_length = webclient_content_length_get(session);
     if (content_length < 0)
     {
-        rt_kprintf("webclient GET request type is chunked.\n");
+        LOG_D("webclient GET request type is chunked.\n");
         do
         {
             bytes_read = webclient_read(session, buffer, GET_RESP_BUFSZ);
@@ -62,11 +133,11 @@ static int webclient_get_comm1(const char *uri)
 
             for (index = 0; index < bytes_read; index++)
             {
-                rt_kprintf("%c", buffer[index]);
+//                rt_kprintf("%c", buffer[index]);
             }
         } while (1);
 
-        rt_kprintf("\n");
+//        rt_kprintf("\n");
     }
     else
     {
@@ -84,15 +155,16 @@ static int webclient_get_comm1(const char *uri)
 
             for (index = 0; index < bytes_read; index++)
             {
-                rt_kprintf("%c", buffer[index]);
+//                rt_kprintf("%c", buffer[index]);
             }
 
             content_pos += bytes_read;
         } while (content_pos < content_length);
 
-        rt_kprintf("\n");
+//        rt_kprintf("\n");
     }
-
+    LOG_D("resp:%s",buffer);
+    weather_data_parse((char*)buffer);
 __exit:
     if (session)
     {
@@ -106,25 +178,26 @@ __exit:
 
     return ret;
 }
+
 int weather_get_test(int argc, char **argv)
 {
     char *uri = RT_NULL;
 
-    if (argc == 1)
+    if (argc == 2)
     {
-        uri = web_strdup(WEATHER_GET_URI);
-        if(uri == RT_NULL)
+    	uri = rt_malloc(URL_MAX_LEN);
+		if(uri == RT_NULL)
         {
-            rt_kprintf("no memory for create get request uri buffer.\n");
+		    LOG_D("no memory for create get request uri buffer.\n");
             return -RT_ENOMEM;
         }
-
+		rt_sprintf(uri, WEATHER_GET_URI,argv[1]);
+       
         webclient_get_comm1(uri);
     }
     else
     {
-        rt_kprintf("web_get_test [URI]     - webclient GET request test.\n");
-        rt_kprintf("web_get_test -s [URI]  - webclient simplify GET request test.\n");
+        LOG_D("web_get_test [location]  - webclient GET request test.\n");
         return -RT_ERROR;
     }
 

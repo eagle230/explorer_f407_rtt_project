@@ -12,9 +12,11 @@
 #define DBG_TAG "main"
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
+#include "udp_multicast.h"
 int main(void)
 {
     LOG_D("Nate test project build on %s %s",__DATE__,__TIME__);
+    udp_app_start();
     while (1)
     {
         rt_thread_mdelay(1000);
