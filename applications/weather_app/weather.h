@@ -15,5 +15,5 @@
 #define URL_MAX_LEN					   256
 #define WEATHER_GET_URI                  "https://api.seniverse.com/v3/weather/now.json?key=Sfu0cnHxMOS421TeI&location=%s&language=zh-Hans&unit=c"
 
-
+extern int weather_app_start(void);
 #endif /* APPLICATIONS_WEATHER_APP_WEATHER_H_ */

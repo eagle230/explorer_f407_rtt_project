@@ -88,7 +88,7 @@ void Tsk_test_app(void *parameter)
 }
 void udp_app_start(void)
 {
-    tsk_udp_handle = rt_thread_create("udp_test",Tsk_udp_app,RT_NULL,1024*2,30,5);
+    tsk_udp_handle = rt_thread_create("udp_test",Tsk_udp_app,RT_NULL,1024*2,22,5);
     if(tsk_udp_handle != RT_NULL)
     {
         LOG_D("creat udp_task success..\r\n");

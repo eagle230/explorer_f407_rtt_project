@@ -10,11 +10,12 @@
 #include <rtthread.h>
 #include <webclient.h>
 #include "weather.h"
-//#include <stdio.h>
 #include <cJSON.h>
 #define DBG_TAG "weather_app"
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
+static rt_thread_t tsk_weather_handle = RT_NULL;
+
 char str_name[12],str_time[24],str_temp[24];
 static int weather_data_parse(const char *data)
 {
@@ -178,7 +179,54 @@ __exit:
 
     return ret;
 }
+int app_weather_get(void)
+{
+    char *uri = RT_NULL;
 
+    uri = rt_malloc(URL_MAX_LEN);
+    if(uri == RT_NULL)
+    {
+        LOG_D("no memory for create get request uri buffer.\n");
+        return -RT_ENOMEM;
+    }
+    rt_sprintf(uri, WEATHER_GET_URI,"nanjing");
+
+    webclient_get_comm1(uri);
+
+    if (uri)
+    {
+        web_free(uri);
+    }
+
+    return RT_EOK;
+}
+static void tsk_weathe_app(void *parameter)
+{
+    char uri[URL_MAX_LEN] ={0};
+    rt_sprintf(uri, WEATHER_GET_URI,"nanjing");
+    while(1)
+    {
+        rt_thread_delay(1*60*1000);
+        webclient_get_comm1(uri);
+        LOG_D("tsk_weathe_app tsk_weathe_app!\r\n");
+    }
+
+}
+int weather_app_start(void)
+{
+    tsk_weather_handle = rt_thread_create("weather_app", tsk_weathe_app, RT_NULL, 10*1024, 30, 10);
+    if (tsk_weather_handle != RT_NULL)
+    {
+        rt_thread_startup(tsk_weather_handle);
+        LOG_D("tsk_weather_handle successed!\r\n");
+    }
+    else
+    {
+        LOG_D("tsk_weather_handle failed!\r\n");
+        return -1;
+    }
+    return 0;
+}
 int weather_get_test(int argc, char **argv)
 {
     char *uri = RT_NULL;

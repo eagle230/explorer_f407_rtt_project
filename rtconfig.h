@@ -110,6 +110,8 @@
 #define RT_SYSTEM_WORKQUEUE_PRIORITY 23
 #define RT_USING_SERIAL
 #define RT_SERIAL_RB_BUFSZ 64
+#define RT_USING_I2C
+#define RT_USING_I2C_BITOPS
 #define RT_USING_PIN
 #define RT_USING_RTC
 #define RT_USING_SOFT_RTC
@@ -118,6 +120,7 @@
 #define RT_SFUD_USING_SFDP
 #define RT_SFUD_USING_FLASH_INFO_TABLE
 #define RT_SFUD_SPI_MAX_HZ 50000000
+#define RT_USING_TOUCH
 
 /* Using USB */
 
@@ -218,7 +221,7 @@
 #define ULOG_OUTPUT_LVL 7
 #define ULOG_USING_ISR_LOG
 #define ULOG_ASSERT_ENABLE
-#define ULOG_LINE_BUF_SIZE 1024
+#define ULOG_LINE_BUF_SIZE 512
 #define ULOG_USING_ASYNC_OUTPUT
 #define ULOG_ASYNC_OUTPUT_BUF_SIZE 10240
 #define ULOG_ASYNC_OUTPUT_BY_THREAD
@@ -324,6 +327,7 @@
 
 /* peripheral libraries and drivers */
 
+#define PKG_USING_TOUCH_DRIVERS
 /* end of peripheral libraries and drivers */
 
 /* AI packages */
